@@ -1,5 +1,6 @@
 networks:
   printscript-net:
+    external: true
     name: printscript-net
 
 volumes:
