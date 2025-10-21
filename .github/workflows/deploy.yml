@@ -89,7 +89,7 @@ jobs:
             git checkout dev || true
             git pull || true
             
-            cat > .env <<'EOF'
+            cat > .env <<EOF
             SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
             EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
             TESTS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-tests
@@ -136,7 +136,7 @@ jobs:
             git checkout main || true
             git pull || true
             
-            cat > .env <<'EOF'
+            cat > .env <<EOF
             SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
             EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
             TESTS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-tests
