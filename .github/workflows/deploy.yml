@@ -1,0 +1,77 @@
+name: Deploy infra (all services)
+
+on:
+  push:
+    branches: [ "dev", "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Start DEV VM
+        if: github.ref_name == 'dev'
+        run: |
+          az vm start -g "${{ secrets.AZ_RG_DEV }}" -n "${{ secrets.AZ_VM_DEV_NAME }}"
+          for i in {1..24}; do nc -z ${{ secrets.VM_DEV_HOST }} 22 && exit 0; sleep 5; done; exit 1
+
+      - name: Start PROD VM
+        if: github.ref_name == 'main'
+        run: |
+          az vm start -g "${{ secrets.AZ_RG_PROD }}" -n "${{ secrets.AZ_VM_PROD_NAME }}"
+          for i in {1..24}; do nc -z ${{ secrets.VM_PROD_HOST }} 22 && exit 0; sleep 5; done; exit 1
+
+      - name: Deploy to DEV (all)
+        if: github.ref_name == 'dev'
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        with:
+          host: ${{ secrets.VM_DEV_HOST }}
+          username: ${{ secrets.VM_SSH_USER }}
+          key: ${{ secrets.VM_DEV_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/infrastructure
+            git fetch --all
+            git checkout dev || true
+            git pull || true
+            if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
+              echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            fi
+            docker network create printscript-net || true
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+            docker image prune -f
+
+      - name: Deploy to PROD (all)
+        if: github.ref_name == 'main'
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        with:
+          host: ${{ secrets.VM_PROD_HOST }}
+          username: ${{ secrets.VM_SSH_USER }}
+          key: ${{ secrets.VM_PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/infrastructure
+            git fetch --all
+            git checkout main || true
+            git pull || true
+            if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
+              echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            fi
+            docker network create printscript-net || true
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+            docker image prune -f
