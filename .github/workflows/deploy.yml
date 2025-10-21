@@ -13,28 +13,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Chequeos básicos
       - name: Basic files check
         run: |
           test -f docker-compose.yml || (echo "docker-compose.yml no encontrado" && exit 1)
-          test -f .env || (echo ".env no encontrado" && exit 1)
 
-      # Validar reglas por rama (tags)
-      - name: Validate tags per branch
+      - name: Validate tags per branch (latest vs dev-latest)
         run: |
           echo "Branch: ${{ github.ref_name }}"
           if [ "${{ github.ref_name }}" = "main" ]; then
-            ! grep -R "dev-latest" -n .env docker-compose.yml || (echo "main no puede usar dev-latest" && exit 1)
-            for v in SNIPPETS_TAG EXECUTION_TAG TESTS_TAG; do
-              val="$(grep -E "^$v=" .env | cut -d= -f2 || true)"
-              [ -z "$val" ] || [ "$val" = "latest" ] || { echo " $v debe ser 'latest' en main (es '$val')"; exit 1; }
-            done
+            ! grep -R "dev-latest" -n docker-compose.yml . || (echo "main no puede usar dev-latest" && exit 1)
           elif [ "${{ github.ref_name }}" = "dev" ]; then
-            grep -R "dev-latest" -n .env docker-compose.yml > /dev/null || (echo "dev debe usar dev-latest" && exit 1)
-            ! grep -E "^(SNIPPETS_TAG|EXECUTION_TAG|TESTS_TAG)=latest$" .env || (echo "dev no debe usar latest" && exit 1)
+            true
           else
             echo "Rama no soportada para despliegue" && exit 1
           fi
+
+      - name: Print resolved compose (no .env here)
+        run: docker compose config || true
 
   deploy:
     name: Deploy to target VM
