@@ -37,6 +37,8 @@ jobs:
           fi
 
   deploy:
+    name: Deploy to target VM
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - name: Login to Azure
@@ -62,6 +64,10 @@ jobs:
         env:
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
+          SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
+          TESTS_DB_USER: ${{ secrets.TESTS_DB_USER }}
+          TESTS_DB_PASS: ${{ secrets.TESTS_DB_PASS }}
         with:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
@@ -72,6 +78,23 @@ jobs:
             git fetch --all
             git checkout dev || true
             git pull || true
+            
+            cat > .env <<'EOF'
+            SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
+            EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
+            TESTS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-tests
+
+            SNIPPETS_TAG=dev-latest
+            EXECUTION_TAG=dev-latest
+            TESTS_TAG=dev-latest
+
+            SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
+            SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
+            TESTS_DB_USER=${TESTS_DB_USER}
+            TESTS_DB_PASS=${TESTS_DB_PASS}
+            EOF
+            
+            
             if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             fi
@@ -80,6 +103,7 @@ jobs:
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
             docker image prune -f
+            chmod 600 .env || true
 
       - name: Deploy to PROD (all)
         if: github.ref_name == 'main'
@@ -87,6 +111,10 @@ jobs:
         env:
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
+          SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
+          TESTS_DB_USER: ${{ secrets.TESTS_DB_USER }}
+          TESTS_DB_PASS: ${{ secrets.TESTS_DB_PASS }}
         with:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
@@ -97,11 +125,30 @@ jobs:
             git fetch --all
             git checkout main || true
             git pull || true
+            
+            cat > .env <<'EOF'
+            SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
+            EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
+            TESTS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-tests
+
+            SNIPPETS_TAG=latest
+            EXECUTION_TAG=latest
+            TESTS_TAG=latest
+
+            SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
+            SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
+            TESTS_DB_USER=${TESTS_DB_USER}
+            TESTS_DB_PASS=${TESTS_DB_PASS}
+            EOF
+            
+            
             if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             fi
+            
             docker network create printscript-net || true
             docker compose pull
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
             docker image prune -f
+            chmod 600 .env || true
