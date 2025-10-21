@@ -18,13 +18,18 @@ jobs:
           echo "OK: .env no es requerido en el repo (se genera en la VM)."
 
       - name: Validate tags per branch (latest vs dev-latest)
+        shell: bash
         run: |
+          set -euo pipefail
           echo "Branch: ${{ github.ref_name }}"
+          FILES_TO_CHECK="docker-compose.yml .env.example"
           if [ "${{ github.ref_name }}" = "main" ]; then
-            # En PROD no debe haber dev-latest en archivos del repo
-            ! grep -R "dev-latest" -n docker-compose.yml . || (echo "main no puede usar dev-latest" && exit 1)
+            if grep -n "dev-latest" $FILES_TO_CHECK 2>/dev/null; then
+              echo "main no puede usar dev-latest en $FILES_TO_CHECK"
+              exit 1
+            fi
           elif [ "${{ github.ref_name }}" = "dev" ]; then
-            # En DEV no forzamos .env; se genera en deploy
+            # En DEV no exigimos .env en repo; se genera en deploy.
             true
           else
             echo "Rama no soportada para despliegue" && exit 1
