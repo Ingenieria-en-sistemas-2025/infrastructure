@@ -6,7 +6,6 @@ on:
   workflow_dispatch: {}
 
 jobs:
-
   validate:
     name: Validate compose/env by branch
     runs-on: ubuntu-latest
@@ -16,20 +15,36 @@ jobs:
       - name: Basic files check
         run: |
           test -f docker-compose.yml || (echo "docker-compose.yml no encontrado" && exit 1)
+          echo "OK: .env no es requerido en el repo (se genera en la VM)."
 
       - name: Validate tags per branch (latest vs dev-latest)
+        shell: bash
         run: |
+          set -euo pipefail
           echo "Branch: ${{ github.ref_name }}"
+          FILES_TO_CHECK="docker-compose.yml .env.example"
           if [ "${{ github.ref_name }}" = "main" ]; then
-            ! grep -R "dev-latest" -n docker-compose.yml . || (echo "main no puede usar dev-latest" && exit 1)
+            if grep -n "dev-latest" $FILES_TO_CHECK 2>/dev/null; then
+              echo "main no puede usar dev-latest en $FILES_TO_CHECK"
+              exit 1
+            fi
           elif [ "${{ github.ref_name }}" = "dev" ]; then
+            # En DEV no exigimos .env en repo; se genera en deploy.
             true
           else
             echo "Rama no soportada para despliegue" && exit 1
           fi
 
-      - name: Print resolved compose (no .env here)
-        run: docker compose config || true
+      - name: Print resolved compose
+        shell: bash
+        run: |
+          if [ -f .env ]; then
+            echo "Usando .env presente (solo para inspección local):"
+            docker compose --env-file .env config || true
+          else
+            echo "No hay .env (correcto para repo). Mostrando config con variables sin expandir:"
+            docker compose config || true
+          fi
 
   deploy:
     name: Deploy to target VM
