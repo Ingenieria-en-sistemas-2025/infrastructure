@@ -82,6 +82,7 @@ jobs:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_DEV_SSH_KEY }}
+          envs: GHCR_USER,GHCR_PAT,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,TESTS_DB_USER,TESTS_DB_PASS
           script: |
             set -e
             cd ~/infrastructure
@@ -129,6 +130,7 @@ jobs:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_PROD_SSH_KEY }}
+          envs: GHCR_USER,GHCR_PAT,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,TESTS_DB_USER,TESTS_DB_PASS
           script: |
             set -e
             cd ~/infrastructure
