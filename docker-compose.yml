@@ -1,69 +1,63 @@
-networks:
-  printscript-net:
-    external: true
-    name: printscript-net
+version: "3.9"
 
 volumes:
+  pg_authorization: {}
   pg_snippets: {}
-  pg_tests: {}
 
 services:
+  pg-authorization:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${AUTH_DB_USER:-authorization}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASS:-authorization}
+      POSTGRES_DB: authorization
+    volumes:
+      - pg_authorization:/var/lib/postgresql/data
+
   pg-snippets:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${SNIPPETS_DB_USER}
-      POSTGRES_PASSWORD: ${SNIPPETS_DB_PASS}
+      POSTGRES_USER: ${SNIPPETS_DB_USER:-snippets}
+      POSTGRES_PASSWORD: ${SNIPPETS_DB_PASS:-snippets}
       POSTGRES_DB: snippets
     volumes:
       - pg_snippets:/var/lib/postgresql/data
-    networks: [printscript-net]
-
-  pg-tests:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: ${TESTS_DB_USER}
-      POSTGRES_PASSWORD: ${TESTS_DB_PASS}
-      POSTGRES_DB: tests
-    volumes:
-      - pg_tests:/var/lib/postgresql/data
-    networks: [printscript-net]
 
   execution:
     image: ${EXECUTION_IMAGE}:${EXECUTION_TAG}
     container_name: ps-execution
     environment:
+      SERVER_PORT: 8080
       LOGGING_LEVEL_ROOT: INFO
-    networks: [printscript-net]
+
+  authorization:
+    image: ${AUTH_IMAGE}:${AUTH_TAG}
+    container_name: ps-authorization
+    environment:
+      SERVER_PORT: 8080
+      LOGGING_LEVEL_ROOT: INFO
+      SPRING_DATASOURCE_URL: jdbc:postgresql://pg-authorization:5432/authorization
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER:-authorization}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS:-authorization}
+      EXECUTION_BASE_URL: http://execution:8080
+    depends_on: [ pg-authorization, execution ]
 
   snippets:
     image: ${SNIPPETS_IMAGE}:${SNIPPETS_TAG}
     container_name: ps-snippets
     environment:
+      SERVER_PORT: 8080
+      LOGGING_LEVEL_ROOT: INFO
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-snippets:5432/snippets
-      SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS}
-      EXECUTION_BASE_URL: http://execution:8082
-      LOGGING_LEVEL_ROOT: INFO
+      SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER:-snippets}
+      SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS:-snippets}
+      EXECUTION_BASE_URL: http://execution:8080
     depends_on: [ pg-snippets, execution ]
-    networks: [printscript-net]
-
-  tests:
-    image: ${TESTS_IMAGE}:${TESTS_TAG}
-    container_name: ps-tests
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://pg-tests:5432/tests
-      SPRING_DATASOURCE_USERNAME: ${TESTS_DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${TESTS_DB_PASS}
-      EXECUTION_BASE_URL: http://execution:8082
-      LOGGING_LEVEL_ROOT: INFO
-    depends_on: [ pg-tests, execution ]
-    networks: [printscript-net]
 
   nginx:
     image: nginx:1.27
     container_name: ps-nginx
-    depends_on: [ snippets, execution, tests ]
-    networks: [ printscript-net ]
+    depends_on: [ authorization, execution, snippets ]
     ports:
       - "80:80"
     volumes:
