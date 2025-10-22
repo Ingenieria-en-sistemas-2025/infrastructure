@@ -74,15 +74,15 @@ jobs:
         env:
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          AUTH_DB_USER: ${{ secrets.AUTH_DB_USER }}
+          AUTH_DB_PASS: ${{ secrets.AUTH_DB_PASS }}
           SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
           SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
-          TESTS_DB_USER: ${{ secrets.TESTS_DB_USER }}
-          TESTS_DB_PASS: ${{ secrets.TESTS_DB_PASS }}
         with:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_DEV_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,TESTS_DB_USER,TESTS_DB_PASS
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS
           script: |
             set -e
             cd ~/infrastructure
@@ -91,25 +91,25 @@ jobs:
             git pull || true
             
             cat > .env <<EOF
+            AUTH_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization
             SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
             EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
-            TESTS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-tests
 
+            AUTH_TAG=dev-latest
             SNIPPETS_TAG=dev-latest
             EXECUTION_TAG=dev-latest
-            TESTS_TAG=dev-latest
 
+            AUTH_DB_USER=${AUTH_DB_USER}
+            AUTH_DB_PASS=${AUTH_DB_PASS}
             SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
             SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
-            TESTS_DB_USER=${TESTS_DB_USER}
-            TESTS_DB_PASS=${TESTS_DB_PASS}
             EOF
             
             
             if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             fi
-            docker network create printscript-net || true
+            
             docker compose pull
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
@@ -122,15 +122,15 @@ jobs:
         env:
           GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          AUTH_DB_USER: ${{ secrets.AUTH_DB_USER }}
+          AUTH_DB_PASS: ${{ secrets.AUTH_DB_PASS }}
           SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
           SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
-          TESTS_DB_USER: ${{ secrets.TESTS_DB_USER }}
-          TESTS_DB_PASS: ${{ secrets.TESTS_DB_PASS }}
         with:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_PROD_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,TESTS_DB_USER,TESTS_DB_PASS
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS
           script: |
             set -e
             cd ~/infrastructure
@@ -139,18 +139,18 @@ jobs:
             git pull || true
             
             cat > .env <<EOF
+            AUTH_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization
             SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
             EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
-            TESTS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-tests
 
+            AUTH_TAG=latest
             SNIPPETS_TAG=latest
             EXECUTION_TAG=latest
-            TESTS_TAG=latest
 
+            AUTH_DB_USER=${AUTH_DB_USER}
+            AUTH_DB_PASS=${AUTH_DB_PASS}
             SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
             SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
-            TESTS_DB_USER=${TESTS_DB_USER}
-            TESTS_DB_PASS=${TESTS_DB_PASS}
             EOF
             
             
@@ -158,7 +158,6 @@ jobs:
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             fi
             
-            docker network create printscript-net || true
             docker compose pull
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
