@@ -54,10 +54,19 @@ services:
       EXECUTION_BASE_URL: http://execution:8080
     depends_on: [ pg-snippets, execution ]
 
+  printscript-ui:
+    image: ${UI_IMAGE}:${UI_TAG}
+    container_name: ps-ui
+    environment:
+      TZ: America/Argentina/Buenos_Aires # no se si dejarlo
+    networks:
+      - default
+    depends_on: [ ]
+
   nginx:
     image: nginx:1.27
     container_name: ps-nginx
-    depends_on: [ authorization, execution, snippets ]
+    depends_on: [ printscript-ui, authorization, execution, snippets ]
     ports:
       - "80:80"
     volumes:
