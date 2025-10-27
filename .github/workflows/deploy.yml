@@ -88,6 +88,7 @@ jobs:
             cd ~/infrastructure
             git fetch --all
             git checkout dev || true
+            git reset --hard origin/dev
             git pull || true
             
             cat > .env <<EOF

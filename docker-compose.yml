@@ -59,8 +59,6 @@ services:
     container_name: ps-ui
     environment:
       TZ: America/Argentina/Buenos_Aires # no se si dejarlo
-    networks:
-      - printscript-net
     depends_on: [ ]
 
   nginx:
