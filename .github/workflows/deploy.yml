@@ -94,10 +94,12 @@ jobs:
             AUTH_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization
             SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
             EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
+            UI_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-ui
 
             AUTH_TAG=dev-latest
             SNIPPETS_TAG=dev-latest
             EXECUTION_TAG=dev-latest
+            UI_TAG=dev-latest
 
             AUTH_DB_USER=${AUTH_DB_USER}
             AUTH_DB_PASS=${AUTH_DB_PASS}
@@ -142,10 +144,12 @@ jobs:
             AUTH_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization
             SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
             EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
+            UI_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-ui
 
             AUTH_TAG=latest
             SNIPPETS_TAG=latest
             EXECUTION_TAG=latest
+            UI_TAG=latest
 
             AUTH_DB_USER=${AUTH_DB_USER}
             AUTH_DB_PASS=${AUTH_DB_PASS}
@@ -163,5 +167,3 @@ jobs:
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
             docker image prune -f
             chmod 600 .env || true
-
-      #hola
