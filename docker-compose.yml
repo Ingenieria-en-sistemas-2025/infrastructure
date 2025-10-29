@@ -3,6 +3,9 @@ version: "3.9"
 volumes:
   pg_authorization: {}
   pg_snippets: {}
+  redis_data: {}
+  certbot_conf: { }
+  certbot_www: { }
 
 services:
   pg-authorization:
@@ -23,15 +26,26 @@ services:
     volumes:
       - pg_snippets:/var/lib/postgresql/data
 
+  event-bus:
+    image: redis:7-alpine
+    container_name: ps-event-bus
+    command: ["redis-server", "--save", "60", "1000", "--appendonly", "yes"]
+    volumes: [ "redis_data:/data" ] # tolerancia a caídas
+    restart: unless-stopped
+
   execution:
-    image: ${EXECUTION_IMAGE}:${EXECUTION_TAG}
+    image: ${EXECUTION_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-execution}:${EXECUTION_TAG:-latest}
     container_name: ps-execution
     environment:
       SERVER_PORT: 8080
       LOGGING_LEVEL_ROOT: INFO
+      REDIS_HOST: ${REDIS_HOST:-event-bus}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      SNIPPETS_BASE_URL: http://snippets:8080
+    depends_on: [ event-bus ]
 
   authorization:
-    image: ${AUTH_IMAGE}:${AUTH_TAG}
+    image: ${AUTH_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization}:${AUTH_TAG:-latest}
     container_name: ps-authorization
     environment:
       SERVER_PORT: 8080
@@ -43,7 +57,7 @@ services:
     depends_on: [ pg-authorization, execution ]
 
   snippets:
-    image: ${SNIPPETS_IMAGE}:${SNIPPETS_TAG}
+    image: ${SNIPPETS_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets}:${SNIPPETS_TAG:-latest}
     container_name: ps-snippets
     environment:
       SERVER_PORT: 8080
@@ -52,10 +66,12 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER:-snippets}
       SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS:-snippets}
       EXECUTION_BASE_URL: http://execution:8080
-    depends_on: [ pg-snippets, execution ]
+      REDIS_HOST: ${REDIS_HOST:-event-bus}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    depends_on: [ pg-snippets, execution, event-bus ]
 
   printscript-ui:
-    image: ${UI_IMAGE}:${UI_TAG}
+    image: ${UI_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-ui}:${UI_TAG:-latest}
     container_name: ps-ui
     environment:
       TZ: America/Argentina/Buenos_Aires # no se si dejarlo
@@ -69,8 +85,8 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=America/Argentina/Buenos_Aires
-      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
-      - TOKEN=${DUCK_DNS_TOKEN}
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN:-printscript-prod}
+      - TOKEN=${DUCK_DNS_TOKEN:-changeme}
     volumes:
       - ./config/duckdns:/config # Carpeta para que DuckDNS guarde su estado
 
