@@ -82,7 +82,7 @@ jobs:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_DEV_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN
           script: |
             set -e
             cd ~/infrastructure
@@ -102,6 +102,11 @@ jobs:
             EXECUTION_TAG=dev-latest
             UI_TAG=dev-latest
 
+            DUCK_DNS_TOKEN=${{ secrets.DUCK_DNS_TOKEN }} 
+            DUCKDNS_SUBDOMAIN=printscript-dev
+            DUCKDNS_DOMAIN=printscript-dev.duckdns.org
+            CERTBOT_EMAIL=mgrimoldi@mail.austral.edu.ar
+            
             AUTH_DB_USER=${AUTH_DB_USER}
             AUTH_DB_PASS=${AUTH_DB_PASS}
             SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
@@ -133,7 +138,7 @@ jobs:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_PROD_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN
           script: |
             set -e
             cd ~/infrastructure
@@ -151,6 +156,10 @@ jobs:
             SNIPPETS_TAG=latest
             EXECUTION_TAG=latest
             UI_TAG=latest
+            DUCK_DNS_TOKEN=${{ secrets.DUCK_DNS_TOKEN }} 
+            DUCKDNS_SUBDOMAIN=printscript-prod
+            DUCKDNS_DOMAIN=printscript-prod.duckdns.org
+            CERTBOT_EMAIL=mgrimoldi@mail.austral.edu.ar
 
             AUTH_DB_USER=${AUTH_DB_USER}
             AUTH_DB_PASS=${AUTH_DB_PASS}
@@ -158,6 +167,8 @@ jobs:
             SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
             EOF
             
+            sed -i 's/printscript-dev.duckdns.org/printscript-prod.duckdns.org/g' nginx.conf
+            sed -i 's/printscript-dev.duckdns.org/printscript-prod.duckdns.org/g' docker-compose.yml
             
             if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
