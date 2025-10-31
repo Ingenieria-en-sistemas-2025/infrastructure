@@ -6,6 +6,7 @@ volumes:
   redis_data: {}
   certbot_conf: { }
   certbot_www: { }
+  blob: {}
 
 services:
   pg-authorization:
@@ -16,6 +17,11 @@ services:
       POSTGRES_DB: authorization
     volumes:
       - pg_authorization:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-authorization} -d authorization" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   pg-snippets:
     image: postgres:16
@@ -25,6 +31,11 @@ services:
       POSTGRES_DB: snippets
     volumes:
       - pg_snippets:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${SNIPPETS_DB_USER:-snippets} -d snippets" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   event-bus:
     image: redis:7-alpine
@@ -32,6 +43,46 @@ services:
     command: ["redis-server", "--save", "60", "1000", "--appendonly", "yes"]
     volumes: [ "redis_data:/data" ] # tolerancia a caídas
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    hostname: azurite
+    restart: unless-stopped
+    ports:
+      - "10000:10000" # Blob
+      - "10001:10001" # Queue
+      - "10002:10002" # Table
+    volumes:
+      - blob:/workspace
+    profiles: [ "local" ]
+
+
+  asset-service:
+    image: ghcr.io/austral-ingsis/snippet-asset-service:main.14
+    container_name: asset-service
+    environment:
+      # LOCAL: apunta al emulador
+      AZURE_HOST: "http://azurite"
+      NEW_RELIC_APP_NAME: "asset-service"
+      NEW_RELIC_AGENT_ENABLED: "false"
+    depends_on:
+      azurite:
+        condition: service_started
+    # expongo para debug local; en prod lo dejo interno
+    ports:
+      - "8085:8080"
+    profiles: [ "local" ]
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
 
   execution:
     image: ${EXECUTION_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-execution}:${EXECUTION_TAG:-latest}
@@ -42,7 +93,18 @@ services:
       REDIS_HOST: ${REDIS_HOST:-event-bus}
       REDIS_PORT: ${REDIS_PORT:-6379}
       SNIPPETS_BASE_URL: http://snippets:8080
-    depends_on: [ event-bus ]
+    depends_on:
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "8083:8080"   # host -> container
+    profiles: [ "local" ]
+
 
   authorization:
     image: ${AUTH_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization}:${AUTH_TAG:-latest}
@@ -53,8 +115,20 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-authorization:5432/authorization
       SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER:-authorization}
       SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS:-authorization}
-      EXECUTION_BASE_URL: http://execution:8080
-    depends_on: [ pg-authorization, execution ]
+      EXECUTION_BASE_URL: http://ps-execution:8080
+    depends_on:
+      pg-authorization:
+        condition: service_healthy
+      execution:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "8081:8080"
+    profiles: [ "local" ]
 
   snippets:
     image: ${SNIPPETS_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets}:${SNIPPETS_TAG:-latest}
@@ -65,17 +139,43 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-snippets:5432/snippets
       SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER:-snippets}
       SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS:-snippets}
-      EXECUTION_BASE_URL: http://execution:8080
+      EXECUTION_BASE_URL: http://ps-execution:8080
+      ASSET_SERVICE_BASE_URL: ${ASSET_SERVICE_BASE_URL:-http://asset-service:8080}  # local usa asset-service
       REDIS_HOST: ${REDIS_HOST:-event-bus}
       REDIS_PORT: ${REDIS_PORT:-6379}
-    depends_on: [ pg-snippets, execution, event-bus ]
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: https://dev-c2gyaqqsxa2v3nig.us.auth0.com/
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+    depends_on:
+      pg-snippets:
+        condition: service_healthy
+      execution:
+        condition: service_healthy
+      event-bus:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+    ports:
+      - "8082:8080"
+    profiles: [ "local" ]
 
   printscript-ui:
     image: ${UI_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-ui}:${UI_TAG:-latest}
     container_name: ps-ui
     environment:
       TZ: America/Argentina/Buenos_Aires # no se si dejarlo
-    depends_on: [ ]
+    depends_on:
+      snippets:
+        condition: service_started
+    profiles: [ "prod" ]
 
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
@@ -89,6 +189,7 @@ services:
       - TOKEN=${DUCK_DNS_TOKEN:-changeme}
     volumes:
       - ./config/duckdns:/config # Carpeta para que DuckDNS guarde su estado
+    profiles: [ "prod" ]
 
   certbot:
     container_name: "ps-certbot"
@@ -99,6 +200,7 @@ services:
       - ./certbot/www:/var/www/certbot
     # Usa el dominio de DEV como default (despues se sobreescribe en PROD por el workflow)
     command: certonly --webroot -w /var/www/certbot/ --force-renewal --email mgrimoldi@mail.austral.edu.ar -d printscript-dev.duckdns.org --agree-tos
+    profiles: [ "prod" ]
 
   nginx:
     image: nginx:1.27
@@ -111,3 +213,4 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
+    profiles: [ "prod" ]
