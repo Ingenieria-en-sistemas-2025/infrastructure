@@ -78,11 +78,16 @@ jobs:
           AUTH_DB_PASS: ${{ secrets.AUTH_DB_PASS }}
           SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
           SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
+          DUCK_DNS_TOKEN: ${{ secrets.DUCK_DNS_TOKEN }}
+          AUTH0_ISSUER_URI: ${{ secrets.AUTH0_ISSUER_URI }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
         with:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_DEV_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET
           script: |
             set -e
             cd ~/infrastructure
@@ -102,7 +107,7 @@ jobs:
             EXECUTION_TAG=dev-latest
             UI_TAG=dev-latest
 
-            DUCK_DNS_TOKEN=${{ secrets.DUCK_DNS_TOKEN }} 
+            DUCK_DNS_TOKEN=${DUCK_DNS_TOKEN}
             DUCKDNS_SUBDOMAIN=printscript-dev
             DUCKDNS_DOMAIN=printscript-dev.duckdns.org
             CERTBOT_EMAIL=mgrimoldi@mail.austral.edu.ar
@@ -111,6 +116,12 @@ jobs:
             AUTH_DB_PASS=${AUTH_DB_PASS}
             SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
             SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
+            
+            AUTH0_ISSUER_URI=${AUTH0_ISSUER_URI}
+            AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+            AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+            AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+            
             EOF
             
             
@@ -134,11 +145,16 @@ jobs:
           AUTH_DB_PASS: ${{ secrets.AUTH_DB_PASS }}
           SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
           SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
+          DUCK_DNS_TOKEN: ${{ secrets.DUCK_DNS_TOKEN }}
+          AUTH0_ISSUER_URI: ${{ secrets.AUTH0_ISSUER_URI }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
         with:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_PROD_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET
           script: |
             set -e
             cd ~/infrastructure
@@ -156,7 +172,7 @@ jobs:
             SNIPPETS_TAG=latest
             EXECUTION_TAG=latest
             UI_TAG=latest
-            DUCK_DNS_TOKEN=${{ secrets.DUCK_DNS_TOKEN }} 
+            DUCK_DNS_TOKEN=${DUCK_DNS_TOKEN}
             DUCKDNS_SUBDOMAIN=printscript-prod
             DUCKDNS_DOMAIN=printscript-prod.duckdns.org
             CERTBOT_EMAIL=mgrimoldi@mail.austral.edu.ar
@@ -165,6 +181,12 @@ jobs:
             AUTH_DB_PASS=${AUTH_DB_PASS}
             SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
             SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
+            
+            AUTH0_ISSUER_URI=${AUTH0_ISSUER_URI}
+            AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+            AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+            AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+            
             EOF
             
             sed -i 's/printscript-dev.duckdns.org/printscript-prod.duckdns.org/g' nginx.conf

@@ -93,6 +93,8 @@ services:
       REDIS_HOST: ${REDIS_HOST:-event-bus}
       REDIS_PORT: ${REDIS_PORT:-6379}
       SNIPPETS_BASE_URL: http://snippets:8080
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
     depends_on:
       event-bus:
         condition: service_healthy
@@ -116,6 +118,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER:-authorization}
       SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS:-authorization}
       EXECUTION_BASE_URL: http://ps-execution:8080
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
     depends_on:
       pg-authorization:
         condition: service_healthy
@@ -143,13 +147,14 @@ services:
       ASSET_SERVICE_BASE_URL: ${ASSET_SERVICE_BASE_URL:-http://asset-service:8080}  # local usa asset-service
       REDIS_HOST: ${REDIS_HOST:-event-bus}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: https://dev-c2gyaqqsxa2v3nig.us.auth0.com/
       SPRING_FLYWAY_ENABLED: "false"
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN}
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+
     depends_on:
       pg-snippets:
         condition: service_healthy
