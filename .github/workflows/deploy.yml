@@ -71,26 +71,10 @@ jobs:
       - name: Deploy to DEV (all)
         if: github.ref_name == 'dev'
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          AUTH_DB_USER: ${{ secrets.AUTH_DB_USER }}
-          AUTH_DB_PASS: ${{ secrets.AUTH_DB_PASS }}
-          SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
-          SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
-          DUCK_DNS_TOKEN: ${{ secrets.DUCK_DNS_TOKEN }}
-          AUTH0_ISSUER_URI: ${{ secrets.AUTH0_ISSUER_URI }}
-          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
-          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
-          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-          VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-          VITE_AUTH0_SCOPE: ${{ secrets.VITE_AUTH0_SCOPE }}
         with:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_DEV_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET,AUTH0_DOMAIN,VITE_AUTH0_CLIENT_ID,VITE_AUTH0_SCOPE
           script: |
             set -e
             cd ~/infrastructure
@@ -99,43 +83,7 @@ jobs:
             git reset --hard origin/dev
             git pull || true
             
-            cat > .env <<EOF
-            AUTH_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization
-            SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
-            EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
-            UI_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-ui
-
-            AUTH_TAG=dev-latest
-            SNIPPETS_TAG=dev-latest
-            EXECUTION_TAG=dev-latest
-            UI_TAG=dev-latest
-
-            DUCK_DNS_TOKEN=${DUCK_DNS_TOKEN}
-            DUCKDNS_SUBDOMAIN=printscript-dev
-            DUCKDNS_DOMAIN=printscript-dev.duckdns.org
-            CERTBOT_EMAIL=mgrimoldi@mail.austral.edu.ar
-            
-            AUTH_DB_USER=${AUTH_DB_USER}
-            AUTH_DB_PASS=${AUTH_DB_PASS}
-            SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
-            SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
-            
-            AUTH0_ISSUER_URI=${AUTH0_ISSUER_URI}
-            AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-            AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
-            AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
-            AUTH0_DOMAIN=${AUTH0_DOMAIN}
-            
-            VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID} 
-            VITE_AUTH0_SCOPE=${VITE_AUTH0_SCOPE}
-            
-            AUTHORIZATION_BASE_URL=http://authorization:8080
-            EXECUTION_BASE_URL=http://execution:8080 
-            SNIPPETS_BASE_URL=http://snippets:8080
-            ASSET_SERVICE_BASE_URL=http://asset-service:8080
-            
-            EOF
-            
+            test -f .env || (echo ".env no encontrado en VM. Crear desde .env.template" && exit 1)
             
             if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
@@ -145,26 +93,10 @@ jobs:
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
             docker image prune -f
-            chmod 600 .env || true
 
       - name: Deploy to PROD (all)
         if: github.ref_name == 'main'
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          AUTH_DB_USER: ${{ secrets.AUTH_DB_USER }}
-          AUTH_DB_PASS: ${{ secrets.AUTH_DB_PASS }}
-          SNIPPETS_DB_USER: ${{ secrets.SNIPPETS_DB_USER }}
-          SNIPPETS_DB_PASS: ${{ secrets.SNIPPETS_DB_PASS }}
-          DUCK_DNS_TOKEN: ${{ secrets.DUCK_DNS_TOKEN }}
-          AUTH0_ISSUER_URI: ${{ secrets.AUTH0_ISSUER_URI }}
-          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
-          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
-          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
-          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-          VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-          VITE_AUTH0_SCOPE: ${{ secrets.VITE_AUTH0_SCOPE }}
         with:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
@@ -177,44 +109,7 @@ jobs:
             git checkout main || true
             git pull || true
             
-            cat > .env <<EOF
-            AUTH_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization
-            SNIPPETS_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets
-            EXECUTION_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-execution
-            UI_IMAGE=ghcr.io/ingenieria-en-sistemas-2025/printscript-ui
-
-            AUTH_TAG=latest
-            SNIPPETS_TAG=latest
-            EXECUTION_TAG=latest
-            UI_TAG=latest
-            DUCK_DNS_TOKEN=${DUCK_DNS_TOKEN}
-            DUCKDNS_SUBDOMAIN=printscript-prod
-            DUCKDNS_DOMAIN=printscript-prod.duckdns.org
-            CERTBOT_EMAIL=mgrimoldi@mail.austral.edu.ar
-
-            AUTH_DB_USER=${AUTH_DB_USER}
-            AUTH_DB_PASS=${AUTH_DB_PASS}
-            SNIPPETS_DB_USER=${SNIPPETS_DB_USER}
-            SNIPPETS_DB_PASS=${SNIPPETS_DB_PASS}
-            
-            AUTH0_ISSUER_URI=${AUTH0_ISSUER_URI}
-            AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-            AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
-            AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
-            AUTH0_DOMAIN=${AUTH0_DOMAIN}
-            
-            VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID} 
-            VITE_AUTH0_SCOPE=${VITE_AUTH0_SCOPE}
-            
-            AUTHORIZATION_BASE_URL=http://authorization:8080
-            EXECUTION_BASE_URL=http://execution:8080 
-            SNIPPETS_BASE_URL=http://snippets:8080
-            ASSET_SERVICE_BASE_URL=http://asset-service:8080
-            
-            EOF
-            
-            sed -i 's/printscript-dev.duckdns.org/printscript-prod.duckdns.org/g' nginx.conf
-            sed -i 's/printscript-dev.duckdns.org/printscript-prod.duckdns.org/g' docker-compose.yml
+            test -f .env || (echo ".env no encontrado en VM. Crear desde .env.template" && exit 1)
             
             if [ -n "${GHCR_USER}" ] && [ -n "${GHCR_PAT}" ]; then
               echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
@@ -224,4 +119,3 @@ jobs:
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
             docker image prune -f
-            chmod 600 .env || true
