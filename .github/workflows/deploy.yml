@@ -84,11 +84,13 @@ jobs:
           AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
           AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
           AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_SCOPE: ${{ secrets.VITE_AUTH0_SCOPE }}
         with:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_DEV_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET,AUTH0_DOMAIN
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET,AUTH0_DOMAIN,VITE_AUTH0_CLIENT_ID,VITE_AUTH0_SCOPE
           script: |
             set -e
             cd ~/infrastructure
@@ -124,6 +126,9 @@ jobs:
             AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
             AUTH0_DOMAIN=${AUTH0_DOMAIN}
             
+            VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID} 
+            VITE_AUTH0_SCOPE=${VITE_AUTH0_SCOPE}
+            
             AUTHORIZATION_BASE_URL=http://authorization:8080
             EXECUTION_BASE_URL=http://execution:8080 
             SNIPPETS_BASE_URL=http://snippets:8080
@@ -158,11 +163,13 @@ jobs:
           AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
           AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
           AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_SCOPE: ${{ secrets.VITE_AUTH0_SCOPE }}
         with:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_PROD_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET,AUTH0_DOMAIN
+          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET,AUTH0_DOMAIN,VITE_AUTH0_CLIENT_ID,VITE_AUTH0_SCOPE
           script: |
             set -e
             cd ~/infrastructure
@@ -195,6 +202,9 @@ jobs:
             AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
             AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
             AUTH0_DOMAIN=${AUTH0_DOMAIN}
+            
+            VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID} 
+            VITE_AUTH0_SCOPE=${VITE_AUTH0_SCOPE}
             
             AUTHORIZATION_BASE_URL=http://authorization:8080
             EXECUTION_BASE_URL=http://execution:8080 
