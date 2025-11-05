@@ -56,23 +56,36 @@ http {
       try_files $uri $uri/ @ui_fallback;
     }
 
-    # APIs
-    location /api/snippets/ {
+
+    location = /api/snippets {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      rewrite ^/api/snippets/(.*)$ /$1 break;
-      proxy_pass http://snippets_upstream;
+      proxy_pass http://snippets_upstream/snippets;
     }
 
-    location /api/authorization/ {
+
+    location ^~ /api/snippets/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      rewrite ^/api/authorization/(.*)$ /$1 break;
-      proxy_pass http://authorization_upstream;
+      proxy_pass http://snippets_upstream/snippets/;
     }
 
-    location /api/execution/ {
+
+    location = /api/authorization {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      rewrite ^/api/execution/(.*)$ /$1 break;
-      proxy_pass http://execution_upstream;
+      proxy_pass http://authorization_upstream/authorization;
+    }
+    location ^~ /api/authorization/ {
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass http://authorization_upstream/authorization/;
+    }
+
+
+    location = /api/execution {
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass http://execution_upstream/execution;
+    }
+    location ^~ /api/execution/ {
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass http://execution_upstream/execution/;
     }
 
     location @ui_fallback {
