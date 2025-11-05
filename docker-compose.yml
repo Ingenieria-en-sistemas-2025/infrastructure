@@ -4,8 +4,12 @@ volumes:
   pg_authorization: {}
   pg_snippets: {}
   redis_data: {}
-  certbot_conf: {}
-  certbot_www: {}
+  certbot_conf:
+    external: true
+    name: certbot_conf
+  certbot_www:
+    external: true
+    name: certbot_www
   blob: {}
 
 services:
