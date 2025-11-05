@@ -203,17 +203,10 @@ services:
       - snippets
       - duckdns
       - certbot
-    environment:
-      DUCKDNS_DOMAIN: ${DUCKDNS_DOMAIN}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - certbot_conf:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
-    command: >
-      /bin/sh -c "envsubst '\$DUCKDNS_DOMAIN'
-      < /etc/nginx/nginx.conf.template
-      > /etc/nginx/nginx.conf &&
-      nginx -g 'daemon off;'"
