@@ -4,21 +4,21 @@ volumes:
   pg_authorization: {}
   pg_snippets: {}
   redis_data: {}
-  certbot_conf: { }
-  certbot_www: { }
+  certbot_conf: {}
+  certbot_www: {}
   blob: {}
 
 services:
   pg-authorization:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${AUTH_DB_USER:-authorization}
-      POSTGRES_PASSWORD: ${AUTH_DB_PASS:-authorization}
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASS}
       POSTGRES_DB: authorization
     volumes:
       - pg_authorization:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-authorization} -d authorization" ]
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d authorization"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -26,13 +26,13 @@ services:
   pg-snippets:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${SNIPPETS_DB_USER:-snippets}
-      POSTGRES_PASSWORD: ${SNIPPETS_DB_PASS:-snippets}
+      POSTGRES_USER: ${SNIPPETS_DB_USER}
+      POSTGRES_PASSWORD: ${SNIPPETS_DB_PASS}
       POSTGRES_DB: snippets
     volumes:
       - pg_snippets:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${SNIPPETS_DB_USER:-snippets} -d snippets" ]
+      test: ["CMD-SHELL", "pg_isready -U ${SNIPPETS_DB_USER} -d snippets"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -54,30 +54,23 @@ services:
     container_name: azurite
     hostname: azurite
     restart: unless-stopped
-    ports:
-      - "10000:10000" # Blob
-      - "10001:10001" # Queue
-      - "10002:10002" # Table
     volumes:
       - blob:/workspace
-    profiles: [ "local" ]
-
+    healthcheck:
+      test: [ "CMD-SHELL", "pidof azurite-blob >/dev/null 2>&1 || exit 1" ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
 
   asset-service:
-    image: ghcr.io/austral-ingsis/snippet-asset-service:main.14
-    container_name: asset-service
+    image: ghcr.io/austral-ingsis/snippet-asset-service:${ASSET_TAG}
     environment:
-      # LOCAL: apunta al emulador
-      AZURE_HOST: "http://azurite"
-      NEW_RELIC_APP_NAME: "asset-service"
+      AZURE_HOST: ${AZURE_HOST}
+      NEW_RELIC_APP_NAME: asset-service
       NEW_RELIC_AGENT_ENABLED: "false"
     depends_on:
       azurite:
         condition: service_started
-    # expongo para debug local; en prod lo dejo interno
-    ports:
-      - "8085:8080"
-    profiles: [ "local" ]
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
       interval: 10s
@@ -85,14 +78,14 @@ services:
       retries: 20
 
   execution:
-    image: ${EXECUTION_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-execution}:${EXECUTION_TAG:-latest}
+    image: ${EXECUTION_IMAGE}:${EXECUTION_TAG}
     container_name: ps-execution
     environment:
       SERVER_PORT: 8080
       LOGGING_LEVEL_ROOT: INFO
-      REDIS_HOST: ${REDIS_HOST:-event-bus}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      SNIPPETS_BASE_URL: http://snippets:8080
+      REDIS_HOST: event-bus
+      REDIS_PORT: 6379
+      SNIPPETS_BASE_URL:  http://snippets:8080
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN}
@@ -106,20 +99,16 @@ services:
       interval: 10s
       timeout: 3s
       retries: 30
-    ports:
-      - "8083:8080"   # host -> container
-    profiles: [ "local" ]
-
 
   authorization:
-    image: ${AUTH_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-authorization}:${AUTH_TAG:-latest}
+    image: ${AUTH_IMAGE}:${AUTH_TAG}
     container_name: ps-authorization
     environment:
       SERVER_PORT: 8080
       LOGGING_LEVEL_ROOT: INFO
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-authorization:5432/authorization
-      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER:-authorization}
-      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS:-authorization}
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS}
       EXECUTION_BASE_URL: http://ps-execution:8080
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
@@ -133,30 +122,26 @@ services:
       interval: 10s
       timeout: 3s
       retries: 30
-    ports:
-      - "8081:8080"
-    profiles: [ "local" ]
 
   snippets:
-    image: ${SNIPPETS_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-snippets}:${SNIPPETS_TAG:-latest}
+    image: ${SNIPPETS_IMAGE}:${SNIPPETS_TAG}
     container_name: ps-snippets
     environment:
       SERVER_PORT: 8080
       LOGGING_LEVEL_ROOT: INFO
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-snippets:5432/snippets
-      SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER:-snippets}
-      SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS:-snippets}
+      SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS}
       EXECUTION_BASE_URL: http://ps-execution:8080
       AUTHORIZATION_BASE_URL: http://authorization:8080
-      ASSET_SERVICE_BASE_URL: ${ASSET_SERVICE_BASE_URL:-http://asset-service:8080}  # local usa asset-service
-      REDIS_HOST: ${REDIS_HOST:-event-bus}
-      REDIS_PORT: ${REDIS_PORT:-6379}
+      ASSET_SERVICE_BASE_URL: ${ASSET_SERVICE_BASE_URL}
+      REDIS_HOST: event-bus
+      REDIS_PORT: 6379
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
       AUTH0_DOMAIN: ${AUTH0_DOMAIN}
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-
     depends_on:
       pg-snippets:
         condition: service_healthy
@@ -172,26 +157,17 @@ services:
       timeout: 3s
       retries: 30
 
-    ports:
-      - "8082:8080"
-    profiles: [ "local" ]
-
   printscript-ui:
-    image: ${UI_IMAGE:-ghcr.io/ingenieria-en-sistemas-2025/printscript-ui}:${UI_TAG:-latest}
+    image: ${UI_IMAGE}:${UI_TAG}
     container_name: ps-ui
     environment:
-      environment:
-      VITE_FRONTEND_URL: ${VITE_FRONTEND_URL:-http://localhost:5173}
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+      VITE_FRONTEND_URL: ${VITE_FRONTEND_URL}
+      VITE_API_BASE_URL: /api
       VITE_AUTH0_DOMAIN: ${AUTH0_DOMAIN}
       VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
       VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       VITE_AUTH0_SCOPE: ${VITE_AUTH0_SCOPE}
-      TZ: America/Argentina/Buenos_Aires # no se si dejarlo
-    depends_on:
-      snippets:
-        condition: service_healthy
-    profiles: [ "prod" ]
+      TZ: America/Argentina/Buenos_Aires
 
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
@@ -201,32 +177,43 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=America/Argentina/Buenos_Aires
-      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN:-printscript-prod}
-      - TOKEN=${DUCK_DNS_TOKEN:-changeme}
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
+      - TOKEN=${DUCK_DNS_TOKEN}
     volumes:
-      - ./config/duckdns:/config # Carpeta para que DuckDNS guarde su estado
-    profiles: [ "prod" ]
+      - ./config/duckdns:/config
 
   certbot:
     container_name: "ps-certbot"
     image: certbot/certbot:v2.11.0
     volumes:
-      # para que Certbot guarde los certificados
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    # Usa el dominio de DEV como default (despues se sobreescribe en PROD por el workflow)
-    command: certonly --webroot -w /var/www/certbot/ --force-renewal --email mgrimoldi@mail.austral.edu.ar -d printscript-dev.duckdns.org --agree-tos
-    profiles: [ "prod" ]
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    command: >
+      certonly --webroot -w /var/www/certbot/
+      --force-renewal --email ${CERTBOT_EMAIL}
+      -d ${DUCKDNS_DOMAIN} --agree-tos
 
   nginx:
     image: nginx:1.27
     container_name: ps-nginx
-    depends_on: [ printscript-ui, authorization, execution, snippets, duckdns, certbot ]
+    depends_on:
+      - printscript-ui
+      - authorization
+      - execution
+      - snippets
+      - duckdns
+      - certbot
+    environment:
+      DUCKDNS_DOMAIN: ${DUCKDNS_DOMAIN}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
-    profiles: [ "prod" ]
+      - ./nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    command: >
+      /bin/sh -c "envsubst '\$DUCKDNS_DOMAIN'
+      < /etc/nginx/nginx.conf.template
+      > /etc/nginx/nginx.conf &&
+      nginx -g 'daemon off;'"
