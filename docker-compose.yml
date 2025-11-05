@@ -150,7 +150,7 @@ services:
       event-bus:
         condition: service_healthy
       authorization:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:8080/actuator/health" ]
       interval: 10s
