@@ -57,33 +57,33 @@ http {
     }
 
 
-    location = /api/snippets {
+    location = /snippets {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://snippets_upstream/snippets;
     }
 
 
-    location ^~ /api/snippets/ {
+    location ^~ /snippets/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://snippets_upstream/snippets/;
     }
 
 
-    location = /api/authorization {
+    location = /authorization {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://authorization_upstream/authorization;
     }
-    location ^~ /api/authorization/ {
+    location ^~ /authorization/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://authorization_upstream/authorization/;
     }
 
 
-    location = /api/execution {
+    location = /execution {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://execution_upstream/execution;
     }
-    location ^~ /api/execution/ {
+    location ^~ /execution/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://execution_upstream/execution/;
     }
