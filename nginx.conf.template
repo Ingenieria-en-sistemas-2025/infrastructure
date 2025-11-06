@@ -62,10 +62,20 @@ http {
       proxy_pass http://snippets_upstream/snippets/;
     }
 
+    location = /snippets {
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass http://snippets_upstream/snippets;
+    }
+
     location ^~ /authorization/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://authorization_upstream/authorization/;
     }
+
+     location ^~ /authorization {
+          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+          proxy_pass http://authorization_upstream/authorization;
+        }
 
     location ^~ /execution/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
