@@ -19,10 +19,10 @@ http {
   proxy_read_timeout    60s;
   send_timeout          60s;
 
-  upstream printscript_ui_upstream { server printscript-ui:80; }
-  upstream authorization_upstream  { server authorization:8080; }
-  upstream execution_upstream      { server execution:8080; }
-  upstream snippets_upstream       { server snippets:8080; }
+  upstream printscript_ui_upstream { server printscript-ui:80   resolve; }
+  upstream authorization_upstream  { server authorization:8080  resolve; }
+  upstream execution_upstream      { server execution:8080      resolve; }
+  upstream snippets_upstream       { server snippets:8080       resolve; }
 
   server {
     listen 80;
@@ -57,35 +57,19 @@ http {
     }
 
 
-    location = /snippets {
-      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      proxy_pass http://snippets_upstream/snippets;
-    }
-
-
     location ^~ /snippets/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://snippets_upstream/snippets/;
     }
 
-
-    location = /authorization {
-      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      proxy_pass http://authorization_upstream/authorization;
-    }
     location ^~ /authorization/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass http://authorization_upstream/authorization/;
     }
 
-
-    location = /execution {
-      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      proxy_pass http://execution_upstream/execution;
-    }
     location ^~ /execution/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      proxy_pass http://execution_upstream/execution/;
+      proxy_pass http://execution_upstream/;
     }
 
     location @ui_fallback {
