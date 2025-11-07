@@ -83,7 +83,8 @@ http {
 
     location ^~ /execution/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      proxy_pass $exec/;
+      rewrite ^/execution/(.*)$ /$1 break;
+      proxy_pass $exec;
     }
 
     # (opcional) fallback SPA
