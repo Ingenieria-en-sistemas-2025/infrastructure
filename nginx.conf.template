@@ -80,9 +80,8 @@ http {
 
 
     location ^~ /execution/ {
-      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      rewrite ^/execution/(.*)$ /$1 break;  # /execution/run -> /run
-      proxy_pass $exec;                      # ahora /run llega al upstream
+       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+        proxy_pass http://execution:8080/;
     }
 
     # (opcional) fallback SPA
