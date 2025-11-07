@@ -59,15 +59,15 @@ http {
       proxy_pass $ui;
     }
 
-    location = /snippets {
-          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-          proxy_pass $snippets;
+    location ^~ /snippets {
+        add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+        proxy_pass $snippets;
     }
 
     location ^~ /snippets/ {
-              add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-              proxy_pass $snippets/;
-        }
+           add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+           proxy_pass $snippets/;
+    }
 
     location ^~ /authorization/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
