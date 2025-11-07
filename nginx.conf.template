@@ -84,6 +84,11 @@ http {
       proxy_pass $exec/;
     }
 
+    location = /execution {
+          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+          proxy_pass $execution;
+        }
+
     # (opcional) fallback SPA
     location @ui_fallback {
       proxy_pass $ui;
