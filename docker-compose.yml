@@ -144,6 +144,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS}
       EXECUTION_BASE_URL: http://ps-execution:8080
       AUTHORIZATION_BASE_URL: http://authorization:8080
+      AUTHORIZATION_SERVICE_URL: http://authorization:8080
       ASSET_SERVICE_BASE_URL: ${ASSET_SERVICE_BASE_URL}
       REDIS_HOST: event-bus
       REDIS_PORT: 6379
