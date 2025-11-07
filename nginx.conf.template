@@ -65,13 +65,8 @@ http {
 
     location ^~ /snippets {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-      proxy_pass $snippets;
+      proxy_pass http://snippets:8080;
     }
-
-    location ^~ /snippets/ {
-          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-          proxy_pass $snippets/;
-        }
 
 
     location ^~ /authorization/ {
