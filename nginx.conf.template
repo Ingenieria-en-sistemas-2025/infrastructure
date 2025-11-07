@@ -8,6 +8,7 @@ http {
     "https://${DUCKDNS_DOMAIN}" "https://${DUCKDNS_DOMAIN}";
   }
 
+  resolver 127.0.0.11 ipv6=off valid=30s;
 
   proxy_set_header Host              $host;
   proxy_set_header X-Real-IP         $remote_addr;
@@ -30,11 +31,19 @@ http {
     ssl_certificate     /etc/letsencrypt/live/${DUCKDNS_DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DUCKDNS_DOMAIN}/privkey.pem;
 
-    # Redirigir HTTP → HTTPS (excepto ACME)
+    set $ui       http://printscript-ui:80;
+    set $snippets http://snippets:8080;
+    set $auth     http://authorization:8080;
+    set $exec     http://execution:8080;
+
+    # Redirect HTTP → HTTPS (excepto ACME)
     if ($scheme = http) { return 301 https://$host$request_uri; }
 
-    # ACME
-    location ^~ /.well-known/acme-challenge/ { root /var/www/certbot; }
+    # ACME (certbot)
+    location ^~ /.well-known/acme-challenge/ {
+      root /var/www/certbot;
+    }
+
 
     location / {
       add_header 'Access-Control-Allow-Origin'  $cors_allow_origin always;
@@ -48,51 +57,39 @@ http {
         return 204;
       }
 
-      try_files $uri $uri/ @ui_fallback;
+      proxy_pass $ui;
     }
 
-    location @ui_fallback {
-      proxy_pass http://printscript-ui:80;
-      rewrite ^.*$ /index.html break;
+    location ^~ /snippets {
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass $snippets;
     }
 
     location ^~ /snippets/ {
-      add_header 'Access-Control-Allow-Origin'  $cors_allow_origin always;
-      add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-      add_header 'Access-Control-Allow-Headers' 'Authorization, DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
-      add_header 'Access-Control-Max-Age' 2592000 always;
-      if ($request_method = 'OPTIONS') {
-        add_header 'Content-Type' 'text/plain; charset=utf-8' always;
-        add_header 'Content-Length' 0 always; return 204;
-      }
-      # barra final ⇒ conserva el prefijo /snippets/
-      proxy_pass http://snippets:8080/snippets/;
-    }
+          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+          proxy_pass $snippets/;
+        }
 
 
     location ^~ /authorization/ {
-      add_header 'Access-Control-Allow-Origin'  $cors_allow_origin always;
-      add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-      add_header 'Access-Control-Allow-Headers' 'Authorization, DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
-      add_header 'Access-Control-Max-Age' 2592000 always;
-      if ($request_method = 'OPTIONS') {
-        add_header 'Content-Type' 'text/plain; charset=utf-8' always;
-        add_header 'Content-Length' 0 always; return 204;
-      }
-      proxy_pass http://authorization:8080/authorization/;
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass $auth/;
+    }
+    location = /authorization {
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass $auth/;
     }
 
 
     location ^~ /execution/ {
-      add_header 'Access-Control-Allow-Origin'  $cors_allow_origin always;
-      add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-      add_header 'Access-Control-Allow-Headers' 'Authorization, DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
-      add_header 'Access-Control-Max-Age' 2592000 always;
-      if ($request_method = 'OPTIONS') {
-        add_header 'Content-Type' 'text/plain; charset=utf-8' always;
-        add_header 'Content-Length' 0 always; return 204;
-      }
-      proxy_pass http://execution:8080/;
+      add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+      proxy_pass $exec/;
+    }
+
+    # (opcional) fallback SPA
+    location @ui_fallback {
+      proxy_pass $ui;
+      rewrite ^.*$ /index.html break;
     }
   }
 }
