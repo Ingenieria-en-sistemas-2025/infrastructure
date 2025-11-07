@@ -1,16 +1,17 @@
 events {}
 
 http {
-  # CORS permitido para UI local y dominio público
+
   map $http_origin $cors_allow_origin {
     default "";
     "http://localhost:5173" "http://localhost:5173";
     "https://${DUCKDNS_DOMAIN}" "https://${DUCKDNS_DOMAIN}";
   }
 
+
   resolver 127.0.0.11 ipv6=off valid=30s;
 
-  # Headers comunes de proxy
+
   proxy_set_header Host              $host;
   proxy_set_header X-Real-IP         $remote_addr;
   proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
@@ -24,11 +25,6 @@ http {
   send_timeout          60s;
   client_max_body_size  10m;
 
-  set $ui        http://printscript-ui:80;
-  set $snippets  http://snippets:8080;
-  set $auth      http://authorization:8080;
-  set $exec      http://execution:8080;
-
   server {
     listen 80;
     listen 443 ssl;
@@ -37,10 +33,16 @@ http {
     ssl_certificate     /etc/letsencrypt/live/${DUCKDNS_DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${DUCKDNS_DOMAIN}/privkey.pem;
 
-    # Redirigí HTTP -> HTTPS (excepto ACME)
+
+    set $ui       http://printscript-ui:80;
+    set $snippets http://snippets:8080;
+    set $auth     http://authorization:8080;
+    set $exec     http://execution:8080;
+
+    # Redirect HTTP → HTTPS (excepto ACME)
     if ($scheme = http) { return 301 https://$host$request_uri; }
 
-    # ACME challenge (Certbot)
+    # ACME (certbot)
     location ^~ /.well-known/acme-challenge/ {
       root /var/www/certbot;
     }
@@ -61,18 +63,21 @@ http {
       proxy_pass $ui;
     }
 
-
-    location /snippets {
+    location ^~ /snippets {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass $snippets;
     }
+
+    location ^~ /snippets/ {
+          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+          proxy_pass $snippets/;
+        }
 
 
     location ^~ /authorization/ {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass $auth/;
     }
-
     location = /authorization {
       add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
       proxy_pass $auth/;
@@ -84,6 +89,7 @@ http {
       proxy_pass $exec/;
     }
 
+    # (opcional) fallback SPA
     location @ui_fallback {
       proxy_pass $ui;
       rewrite ^.*$ /index.html break;
