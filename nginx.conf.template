@@ -85,6 +85,22 @@ http {
       proxy_pass $exec;
     }
 
+    location ^~ /api/ {
+        # Asegura CORS completo (métodos, headers, y pre-vuelo OPTIONS)
+        add_header 'Access-Control-Allow-Origin'  $cors_allow_origin always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Authorization, DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        add_header 'Access-Control-Max-Age' 2592000 always;
+
+        if ($request_method = 'OPTIONS') {
+            add_header 'Content-Type'  'text/plain; charset=utf-8' always;
+            add_header 'Content-Length' 0 always;
+            return 204;
+        }
+        # Pasa la solicitud a snippets
+        proxy_pass $snippets;
+    }
+
     # (opcional) fallback SPA
     location @ui_fallback {
       proxy_pass $ui;
