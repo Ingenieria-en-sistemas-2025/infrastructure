@@ -99,7 +99,7 @@ services:
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_EXECUTION_APP_NAME:-printscript-execution}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_EXECUTION_APP_NAME:-snippet-searcher}
     depends_on:
       event-bus:
         condition: service_healthy
@@ -123,7 +123,7 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_AUTH_APP_NAME:-printscript-authorization}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_AUTH_APP_NAME:-snippet-searcher}
     depends_on:
       pg-authorization:
         condition: service_healthy
@@ -160,7 +160,7 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_SNIPPETS_APP_NAME:-printscript-snippets}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_SNIPPETS_APP_NAME:-snippet-searcher}
     depends_on:
       pg-snippets:
         condition: service_healthy
