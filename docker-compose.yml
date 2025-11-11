@@ -100,7 +100,7 @@ services:
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_EXECUTION_APP_NAME:-snippet-searcher}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_EXECUTION_APP_NAME:-printscript-execution}
       DEBUG: "true"
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_CONDITION: DEBUG
       LOGGING_LEVEL_io_lettuce_core: DEBUG
@@ -128,7 +128,7 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_AUTH_APP_NAME:-snippet-searcher}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_AUTH_APP_NAME:-printscript-authorization}
     depends_on:
       pg-authorization:
         condition: service_healthy
@@ -165,7 +165,7 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
-      NEW_RELIC_APP_NAME: ${NEW_RELIC_SNIPPETS_APP_NAME:-snippet-searcher}
+      NEW_RELIC_APP_NAME: ${NEW_RELIC_SNIPPETS_APP_NAME:-printscript-snippets}
     depends_on:
       pg-snippets:
         condition: service_healthy
