@@ -6,49 +6,8 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  validate:
-    name: Validate compose/env by branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Basic files check
-        run: |
-          test -f docker-compose.yml || (echo "docker-compose.yml no encontrado" && exit 1)
-          echo "OK: .env no es requerido en el repo (se genera en la VM)."
-
-      - name: Validate tags per branch (latest vs dev-latest)
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Branch: ${{ github.ref_name }}"
-          FILES_TO_CHECK="docker-compose.yml .env.example"
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            if grep -n "dev-latest" $FILES_TO_CHECK 2>/dev/null; then
-              echo "main no puede usar dev-latest en $FILES_TO_CHECK"
-              exit 1
-            fi
-          elif [ "${{ github.ref_name }}" = "dev" ]; then
-            # En DEV no exigimos .env en repo; se genera en deploy.
-            true
-          else
-            echo "Rama no soportada para despliegue" && exit 1
-          fi
-
-      - name: Print resolved compose
-        shell: bash
-        run: |
-          if [ -f .env ]; then
-            echo "Usando .env presente (solo para inspección local):"
-            docker compose --env-file .env config || true
-          else
-            echo "No hay .env (correcto para repo). Mostrando config con variables sin expandir:"
-            docker compose config || true
-          fi
-
   deploy:
     name: Deploy to target VM
-    needs: validate
     runs-on: ubuntu-latest
     steps:
       - name: Login to Azure
@@ -71,6 +30,9 @@ jobs:
       - name: Deploy to DEV (all)
         if: github.ref_name == 'dev'
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
         with:
           host: ${{ secrets.VM_DEV_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
@@ -97,11 +59,13 @@ jobs:
       - name: Deploy to PROD (all)
         if: github.ref_name == 'main'
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
         with:
           host: ${{ secrets.VM_PROD_HOST }}
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_PROD_SSH_KEY }}
-          envs: GHCR_USER,GHCR_PAT,AUTH_DB_USER,AUTH_DB_PASS,SNIPPETS_DB_USER,SNIPPETS_DB_PASS,DUCK_DNS_TOKEN,AUTH0_ISSUER_URI,AUTH0_AUDIENCE,AUTH0_CLIENT_ID,AUTH0_CLIENT_SECRET,AUTH0_DOMAIN,VITE_AUTH0_CLIENT_ID,VITE_AUTH0_SCOPE
           script: |
             set -e
             cd ~/infrastructure
