@@ -101,10 +101,6 @@ services:
       NEW_RELIC_AGENT_ENABLED: ${NEW_RELIC_AGENT_ENABLED}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       NEW_RELIC_APP_NAME: ${NEW_RELIC_EXECUTION_APP_NAME:-printscript-execution}
-      DEBUG: "true"
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE_CONDITION: DEBUG
-      LOGGING_LEVEL_io_lettuce_core: DEBUG
-      LOGGING_LEVEL_org_springframework_data_redis: DEBUG
     depends_on:
       event-bus:
         condition: service_healthy
