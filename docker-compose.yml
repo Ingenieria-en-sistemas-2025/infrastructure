@@ -86,9 +86,6 @@ services:
     container_name: ps-execution
     environment:
       SERVER_PORT: 8080
-      LOGGING_LEVEL_ROOT: INFO
-      SPRING_DATA_REDIS_HOST: ps-event-bus
-      SPRING_DATA_REDIS_PORT: 6379
       REDIS_HOST: ps-event-bus
       REDIS_PORT: 6379
       STREAMS_ENABLED: true
@@ -115,7 +112,6 @@ services:
     container_name: ps-authorization
     environment:
       SERVER_PORT: 8080
-      LOGGING_LEVEL_ROOT: INFO
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-authorization:5432/authorization
       SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS}
@@ -141,17 +137,13 @@ services:
     container_name: ps-snippets
     environment:
       SERVER_PORT: 8080
-      LOGGING_LEVEL_ROOT: INFO
       SPRING_DATASOURCE_URL: jdbc:postgresql://pg-snippets:5432/snippets
       SPRING_DATASOURCE_USERNAME: ${SNIPPETS_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SNIPPETS_DB_PASS}
       EXECUTION_BASE_URL: http://ps-execution:8080
       AUTHORIZATION_BASE_URL: http://authorization:8080
-      AUTHORIZATION_SERVICE_URL: http://authorization:8080
       ASSET_SERVICE_BASE_URL: ${ASSET_SERVICE_BASE_URL}
       ASSET_CONTAINER_NAME: snippets
-      SPRING_DATA_REDIS_HOST: ps-event-bus
-      SPRING_DATA_REDIS_PORT: 6379
       REDIS_HOST: ps-event-bus
       REDIS_PORT: 6379
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${AUTH0_ISSUER_URI}
@@ -170,7 +162,7 @@ services:
       event-bus:
         condition: service_healthy
       authorization:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/snippets/ping >/dev/null || exit 1" ]
       interval: 10s
